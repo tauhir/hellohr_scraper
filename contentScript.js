@@ -11,6 +11,10 @@ get payroll data
 const payrollURL = "https://app.hellohr.co.za/payroll"
 const employeesURL = "https://app.hellohr.co.za/companies"
 const companiesURL = "https://app.hellohr.co.za/" 
+const companies = "companies"
+const employees = "employees"
+const payroll = "payroll"
+var companyIndex;
 function interceptData() {
     var s = document.createElement('script');
     s.src = chrome.runtime.getURL('script.js');
@@ -34,26 +38,51 @@ requestIdleCallback(checkForDOM);
 
 
 chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
-      console.log(sender.tab ?
-                  "from a content script:" + sender.tab.url :
-                  "from the extension");
-      if (request.action === "start scraping") {
-        sendResponse({action: "scraping started"});
-        mainFn();
-    } else if (request.action.contains("start processing company")) {
-        //change context to that company, click employee page for the company
-        var length = Number(request.action.split(":")[1])
-        employeesFn(length);
+  function(request, sender, sendResponse) {
+    console.log(sender.tab ?
+                "from a content script:" + sender.tab.url :
+                "from the extension");
+    if (request.action === "start scraping") {
+      var companyAmount = companiesCheck();
+      sendResponse({action: "Companies to scrape:"+companyAmount});
+      mainFn();
+
+    } else if (request.action.contains("change context to company")) {
+      //change context to that company, click employee page for the company
+      companyIndex = Number(request.action.split(":")[1]);
+      sendResponse({action: "context has been set"});
+    
+    } else if (request.action.contains("start processing company and employees for")) {
+      //change context to that company, click employee page for the company
+      companyIndex = Number(request.action.split(":")[1]);
+      mainFn(companies);
+
+    }  else if (request.action.contains("start processing payroll for")) {
+      //change context to that company, click employee page for the company
+      companyIndex = Number(request.action.split(":")[1])
+      employeesFn(length);
+    } else {
+
     }
 });
 
 
-  function mainFn() {
+
+  function companiesCheck(){
+    var companies = document.getElementsByClassName("bubble-element RepeatingGroup")[0].getElementsByClassName("bubble-element Group clickable-element")
+    return companies.length;
+  }
+
+  function switchContext(index) {
+    var companies = document.getElementsByClassName("bubble-element RepeatingGroup")[0].getElementsByClassName("bubble-element Group clickable-element")
+    companies[index].click();
+  }
+
+  function mainFn(context) {
     
     //location.reload();
     console.log("scraping companies now")
-    const intervalID = setInterval(scrapeData("companies"), 1500);
+    const intervalID = setInterval(scrapeData(context), 1500);
 
 }
   function employeesFn(company){
@@ -115,8 +144,8 @@ chrome.runtime.onMessage.addListener(
                   });
               })
               element.remove(); //after processing element, delete it to ensure we don't do doublework 
-              //chrome.runtime.sendMessage({action: "completed companies:"+result.logData.length}, function(response) {
-              scrapeData('employees');  
+              chrome.runtime.sendMessage({action: "completed company and employees:"+companyIndex}, function(response) {})
+
             }});
         break;
       default:
@@ -194,4 +223,3 @@ function getData(companyArray, responseData, context) {
       }
     return [parsed,companies]; 
 }
-//const intervalID = setInterval(scrapeData, 2000);
