@@ -1,0 +1,22 @@
+{
+  "name": "HelloHR scraper",
+  "description": "Scrapes HelloHR for import to SP",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [{
+    "matches": ["https://*/*"],
+    "js": ["contentScript.js"],
+    "run_at": "document_start"
+  }],
+  "web_accessible_resources": [{
+    "resources": ["script.js"],
+    "matches": ["<all_urls>"]
+  }]
+}
